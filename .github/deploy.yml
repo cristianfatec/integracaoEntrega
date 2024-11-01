@@ -1,0 +1,47 @@
+name: Docker CI/CD  # Nome do workflow para fácil identificação no GitHub Actions
+
+on:  # Define quando o workflow deve ser executado
+  push:  # Executa o workflow quando ocorre um push
+    branches:  # Limita aos pushes na branch 'main'
+      - main
+  pull_request:  # Executa o workflow quando um pull request é aberto ou atualizado na branch 'main'
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:  # Nome do job que contém os passos do workflow
+    runs-on: windows-latest # Define que o job será executado em uma máquina Ubuntu mais recente
+
+    steps:  # Lista de passos a serem executados
+      - name: Check out code  # Primeiro passo: fazer o checkout do código
+        uses: actions/checkout@v3  # Utiliza a ação oficial do GitHub para clonar o repositório
+
+      - name: Set up Docker  # Configura o ambiente para usar o Docker
+        uses: docker/setup-buildx-action@v2  # Utiliza a ação oficial para configurar o Docker Buildx
+
+      - name: Log in to DockerHub  # Faz login no DockerHub para permitir o push da imagem
+        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+        # Utiliza a senha armazenada nos secrets para fazer login no DockerHub de forma segura
+
+      - name: Build Docker image  # Constrói a imagem Docker da aplicação
+        run: docker build -t your-dockerhub-username/your-image-name:latest .
+        # Constrói a imagem com o nome e a tag especificados. O ponto (.) indica o diretório atual como contexto de build
+
+      - name: Push Docker image to DockerHub  # Faz o push da imagem para o DockerHub
+        run: docker push your-dockerhub-username/your-image-name:latest
+        # Envia a imagem para o repositório do DockerHub
+
+      - name: SSH and Deploy to Server  # Faz o deploy da aplicação no servidor remoto
+        uses: appleboy/ssh-action@v0.1.5  # Utiliza uma ação para executar comandos via SSH
+        with:
+          host: 201.23.3.86  # Endereço IP do servidor
+          username: aluno  # Nome de usuário SSH para acessar o servidor
+          key: ${{ secrets.SSH_KEY }}  # Chave SSH armazenada nos secrets para acesso seguro
+          port: 8086  # Porta SSH padrão
+
+          script: |  # Script para executar no servidor
+            docker pull your-dockerhub-username/your-image-name:latest  # Puxa a última imagem do DockerHub
+            docker stop app-container || true  # Para o container atual, se ele existir
+            docker rm app-container || true  # Remove o container atual, se ele existir
+            docker run -d -p 8086:3000 --name app-container your-dockerhub-username/your-image-name:latest
+            # Inicia um novo container da imagem baixada, mapeando a porta 3000 da aplicação para a porta 8086 do servidor
