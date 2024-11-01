@@ -23,10 +23,10 @@ jobs:
         run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
       - name: Build Docker image
-        run: docker build -t your-dockerhub-username/your-image-name:latest .
+        run: docker build -t fateccristian/aulavollo:tagname
 
       - name: Push Docker image to DockerHub
-        run: docker push your-dockerhub-username/your-image-name:latest
+        run: docker push fateccristian/aulavollo:tagname
 
       - name: SSH and Deploy to Server
         uses: appleboy/ssh-action@v0.1.5
@@ -37,7 +37,7 @@ jobs:
           port: 22
 
           script: |
-            docker pull your-dockerhub-username/your-image-name:latest
+            docker pull fateccristian/aulavollo:tagname
             docker stop app-container || true
             docker rm app-container || true
-            docker run -d -p 8086:3000 --name app-container your-dockerhub-username/your-image-name:latest
+            docker run -d -p 8086:3000 --name app-container fateccristian/aulavollo:tagname
