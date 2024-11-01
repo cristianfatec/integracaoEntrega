@@ -3,7 +3,7 @@ const http = require('http');
 const server = http.createServer((req, res) => {
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/plain');
-  res.end('Olá, Mundo!');
+  res.end('Hello, world!');
 });
 
 const PORT = 3000;
