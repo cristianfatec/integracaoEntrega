@@ -1,70 +1,46 @@
-name: Deploy to Server
+name: Deploy to Server with Docker
 
 on:
   push:
     branches:
-      - main
+      - main  # Ou a branch que você deseja monitorar, como "dev", por exemplo.
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-latest  # A máquina onde o Docker será executado
 
     steps:
+      # Passo 1: Checkout do código
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Set up SSH key
+      # Passo 2: Configuração do Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # Passo 3: Login no Docker Hub (adicionar as credenciais como secrets)
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # Passo 4: Construir a imagem Docker
+      - name: Build Docker image
         run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          docker build -t my-app .
 
-      # Instalar Node.js e npm sem sudo usando NVM
-      - name: Install Node.js and npm on the server
+      # Passo 5: Rodar o container Docker (se você quiser testar no próprio GitHub Actions)
+      - name: Run Docker container
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa aluno@201.23.3.86 << 'EOF'
-            # Baixar e instalar NVM (Node Version Manager)
-            export NVM_DIR="$HOME/.nvm"
-            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+          docker run -d -p 3000:3000 my-app
 
-            # Carregar o NVM e instalar Node.js
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # Carregar NVM
-            nvm install 16  # Instalar Node.js 16.x
-            nvm use 16      # Usar a versão instalada
-
-            # Verificar as versões do Node.js e npm
-            node -v
-            npm -v
-          EOF
-
-      # Instalar PM2 no servidor
-      - name: Install PM2 on the server
+      # Passo 6: (Opcional) Push da imagem para o Docker Hub
+      - name: Push Docker image to Docker Hub
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa aluno@201.23.3.86 << 'EOF'
-            npm install -g pm2
-          EOF
+          docker push my-app
 
-      # Realizar o deploy
-      - name: Deploy to server
+      # Passo 7: Deploy no servidor remoto (opcional)
+      - name: Deploy to remote server
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa aluno@201.23.3.86 << 'EOF'
-            mkdir -p /home/aluno/projetos/api-airlytics
-            cd /home/aluno/projetos/api-airlytics
-
-            # Clonar ou atualizar o repositório
-            if [ ! -d ".git" ]; then
-              git clone https://github.com/cristianfatec/API-Airlytics.git .
-            else
-              git pull origin main
-            fi
-
-            # Instalar dependências
-            npm install
-
-            # Iniciar/atualizar o app com PM2
-            pm2 restart app || pm2 start app.js
-          EOF
-        env:
-          PORT: 8086
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa aluno@201.23.3.86 "docker pull my-app && docker run -d -p 3000:3000 my-app"
