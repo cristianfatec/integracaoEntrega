@@ -18,29 +18,29 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      # Passo 3: Login no Docker Hub (adicionar as credenciais como secrets)
+      # Passo 3: Login no Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       # Passo 4: Construir a imagem Docker
       - name: Build Docker image
         run: |
-          docker build -t my-app .
+          docker build -t cristian/my-app:latest .
 
       # Passo 5: Rodar o container Docker (se você quiser testar no próprio GitHub Actions)
       - name: Run Docker container
         run: |
-          docker run -d -p 3000:3000 my-app
+          docker run -d -p 3000:3000 cristian/my-app:latest
 
       # Passo 6: (Opcional) Push da imagem para o Docker Hub
       - name: Push Docker image to Docker Hub
         run: |
-          docker push my-app
+          docker push cristian/my-app:latest/my-app:latest
 
       # Passo 7: Deploy no servidor remoto (opcional)
       - name: Deploy to remote server
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa aluno@201.23.3.86 "docker pull my-app && docker run -d -p 3000:3000 my-app"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa aluno@201.23.3.86 "docker pull cristian/my-app:latest && docker run -d -p 3000:3000 cristian/my-app:latest"
