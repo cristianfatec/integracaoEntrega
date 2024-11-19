@@ -1,40 +1,51 @@
-name: Docker CI/CD
+name: Deploy to Server
 
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
+      - main  # Defina o nome da sua branch de deploy, pode ser 'main' ou 'master'
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out code
-        uses: actions/checkout@v3
+      # 1. Checa o código do repositório
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-      - name: Log in to DockerHub
-        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+      # 2. Configura a chave SSH para acessar o servidor
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Build Docker image
-        run: docker build -t fateccristian/aulavollo:tagname .
-
-      - name: Push Docker image to DockerHub
-        run: docker push fateccristian/aulavollo:tagname
-
-      - name: SSH and Deploy to Server
-        uses: appleboy/ssh-action@v0.1.5
+      # 3. Configura o Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
         with:
-          host: 201.23.3.86
-          username: aluno
-          key: ${{ secrets.SSH_KEY }}
-          port: 22
+          node-version: '14'  # Ou a versão do Node.js que você está usando
 
-          script: |
-            docker pull fateccristian/aulavollo:tagname
-            docker stop app-container || true
-            docker rm app-container || true
-            docker run -d -p 8086:3000 --name app-container fateccristian/aulavollo:tagname
+      # 4. Instala as dependências
+      - name: Install dependencies
+        run: npm install
+
+      # 5. Executa os testes (opcional)
+      - name: Run tests
+        run: npm test
+
+      # 6. Faz o deploy para o servidor remoto
+      - name: Deploy to server
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa aluno@201.23.3.86 << 'EOF'
+            cd /caminho/do/projeto
+            git pull origin main
+            npm install
+            pm2 restart app  # Ou outro comando para reiniciar seu servidor
+          EOF
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          PORT: 8086
