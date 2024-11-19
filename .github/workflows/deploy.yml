@@ -21,18 +21,22 @@ jobs:
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      # Instalar Node.js sem sudo usando NVM
+      # Instalar Node.js e npm sem sudo usando NVM
       - name: Install Node.js and npm on the server
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa aluno@201.23.3.86 << 'EOF'
             # Baixar e instalar NVM (Node Version Manager)
-            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
             export NVM_DIR="$HOME/.nvm"
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+
+            # Carregar o NVM e instalar Node.js
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # Carregar NVM
             nvm install 16  # Instalar Node.js 16.x
             nvm use 16      # Usar a versão instalada
-            node -v         # Verificar a instalação
-            npm -v          # Verificar a instalação
+
+            # Verificar as versões do Node.js e npm
+            node -v
+            npm -v
           EOF
 
       # Instalar PM2 no servidor
