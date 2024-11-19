@@ -35,10 +35,10 @@ jobs:
         run: |
           docker run -d -p 3000:3000 cristian/my-app:latest
 
-      # Passo 6: (Opcional) Push da imagem para o Docker Hub
+      # Passo 6: Push da imagem para o Docker Hub
       - name: Push Docker image to Docker Hub
         run: |
-          docker push cristian/my-app:latest/my-app:latest
+          docker push cristian/my-app:latest
 
       # Passo 7: Deploy no servidor remoto (opcional)
       - name: Deploy to remote server
